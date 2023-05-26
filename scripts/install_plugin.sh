@@ -30,3 +30,6 @@ install_plugin() {
 }
 
 install_plugin "terraform.local/local/slack"
+
+# Release to registry
+# /opt/homebrew/Cellar/goreleaser/1.18.2/bin/goreleaser release --clean
