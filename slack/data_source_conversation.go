@@ -62,6 +62,10 @@ func dataSourceConversation() *schema.Resource {
 				Type:     schema.TypeBool,
 				Computed: true,
 			},
+			"team_id": {
+				Type:	schema.TypeBool,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -71,6 +75,7 @@ func dataSourceSlackConversationRead(ctx context.Context, d *schema.ResourceData
 	channelID := d.Get("channel_id").(string)
 	channelName := d.Get("name").(string)
 	isPrivate := d.Get("is_private").(bool)
+	teamID := d.Get("team_id").(string)
 
 	var channel *slack.Channel
 	var err error
@@ -82,7 +87,7 @@ func dataSourceSlackConversationRead(ctx context.Context, d *schema.ResourceData
 			return diag.FromErr(fmt.Errorf("couldn't get conversation info for %s: %w", channelID, err))
 		}
 	} else if channelName != "" {
-		channel, err = findExistingChannel(ctx, client, channelName, isPrivate)
+		channel, err = findExistingChannel(ctx, client, channelName, isPrivate, teamID)
 		if err != nil {
 			return diag.FromErr(fmt.Errorf("couldn't get conversation info for %s: %w", channelName, err))
 		}

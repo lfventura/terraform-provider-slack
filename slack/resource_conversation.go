@@ -81,7 +81,12 @@ func resourceSlackConversation() *schema.Resource {
 			},
 			"is_private": {
 				Type:     schema.TypeBool,
-				Required: true,
+				Optional: true,
+			},
+			"team_id": {
+				Type:	  schema.TypeString,
+				Optional: true,
+				ForceNew: true,
 			},
 			"is_archived": {
 				Type:     schema.TypeBool,
@@ -132,13 +137,15 @@ func resourceSlackConversationCreate(ctx context.Context, d *schema.ResourceData
 
 	name := d.Get("name").(string)
 	isPrivate := d.Get("is_private").(bool)
+	teamID := d.Get("team_id").(string)
 
 	channel, err := client.CreateConversationContext(ctx, slack.CreateConversationParams{
 		ChannelName: name,
 		IsPrivate:   isPrivate,
+		TeamID:      teamID,
 	})
 	if err != nil && err.Error() == "name_taken" && d.Get("adopt_existing_channel").(bool) {
-		channel, err = findExistingChannel(ctx, client, name, isPrivate)
+		channel, err = findExistingChannel(ctx, client, name, isPrivate, teamID)
 		if err == nil && channel.IsArchived {
 			// ensure unarchived first if adopting existing channel, else other calls below will fail
 			if err := client.UnArchiveConversationContext(ctx, channel.ID); err != nil {
@@ -182,7 +189,7 @@ func resourceSlackConversationCreate(ctx context.Context, d *schema.ResourceData
 	return resourceSlackConversationRead(ctx, d, m)
 }
 
-func findExistingChannel(ctx context.Context, client *slack.Client, name string, isPrivate bool) (*slack.Channel, error) {
+func findExistingChannel(ctx context.Context, client *slack.Client, name string, isPrivate bool, teamID string) (*slack.Channel, error) {
 	// find the existing channel. Sadly, there is no non-admin API to search by name,
 	// so we must search through ALL the channels
 	tflog.Info(ctx, "Looking for channel %s", map[string]interface{}{"channel": name})
@@ -198,6 +205,7 @@ func findExistingChannel(ctx context.Context, client *slack.Client, name string,
 			Limit:           cursorLimit,
 			Types:           types,
 			ExcludeArchived: true,
+			TeamID:          teamID,
 		})
 		tflog.Debug(ctx, "new page of channels",
 			map[string]interface{}{
