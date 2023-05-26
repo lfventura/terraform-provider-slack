@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
-	"github.com/slack-go/slack"
+	"github.com/lfventura/slack-go"
 )
 
 var slackClient *slack.Client

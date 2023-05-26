@@ -7,7 +7,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/slack-go/slack"
+	"github.com/lfventura/slack-go"
 )
 
 func resourceSlackUserGroup() *schema.Resource {
@@ -50,6 +50,11 @@ func resourceSlackUserGroup() *schema.Resource {
 				Set:      schema.HashString,
 				Optional: true,
 			},
+			"team_id": {
+				Type:	  schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
@@ -62,6 +67,7 @@ func resourceSlackUserGroupCreate(ctx context.Context, d *schema.ResourceData, m
 	handle := d.Get("handle").(string)
 	channels := d.Get("channels").(*schema.Set)
 	users := d.Get("users").(*schema.Set)
+	team_id := d.Get("team_id").(string)
 
 	userGroup := slack.UserGroup{
 		Name:        name,
@@ -70,23 +76,26 @@ func resourceSlackUserGroupCreate(ctx context.Context, d *schema.ResourceData, m
 		Prefs: slack.UserGroupPrefs{
 			Channels: schemaSetToSlice(channels),
 		},
+		TeamID:		 team_id,
 	}
+
+
 	createdUserGroup, err := client.CreateUserGroupContext(ctx, userGroup)
 	if err != nil {
 		if err.Error() != "name_already_exists" && err.Error() != "handle_already_exists" {
 			return diag.Errorf("could not create usergroup %s: %s", name, err)
 		}
-		group, err := findUserGroupByName(ctx, name, true, m)
+		group, err := findUserGroupByName(ctx, name, true, team_id, m)
 		if err != nil {
 			return diag.Errorf("could not find usergroup %s: %s", name, err)
 		}
-		_, err = client.EnableUserGroupContext(ctx, group.ID)
+		_, err = client.EnableUserGroupContext(ctx, group.ID, slack.DisableUserGroupOptionTeamID(team_id))
 		if err != nil {
 			if err.Error() != "already_enabled" {
 				return diag.Errorf("could not enable usergroup %s (%s): %s", name, group.ID, err)
 			}
 		}
-		_, err = client.UpdateUserGroupContext(ctx, group.ID)
+		_, err = client.UpdateUserGroupContext(ctx, group.ID, slack.UpdateUserGroupsOptionTeamID(&team_id))
 		if err != nil {
 			return diag.Errorf("could not update usergroup %s (%s): %s", name, group.ID, err)
 		}
@@ -96,7 +105,7 @@ func resourceSlackUserGroupCreate(ctx context.Context, d *schema.ResourceData, m
 	}
 
 	if users.Len() > 0 {
-		_, err := client.UpdateUserGroupMembersContext(ctx, d.Id(), strings.Join(schemaSetToSlice(users), ","))
+		_, err := client.UpdateUserGroupMembersContext(ctx, d.Id(), strings.Join(schemaSetToSlice(users), ","), slack.UpdateUserGroupMembersOptionTeamID(team_id))
 		if err != nil {
 			return diag.Errorf("could not update usergroup members %s: %s", name, err)
 		}
@@ -108,8 +117,9 @@ func resourceSlackUserGroupCreate(ctx context.Context, d *schema.ResourceData, m
 func resourceSlackUserGroupRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*slack.Client)
 	id := d.Id()
+	team_id := d.Get("team_id").(string)
 	var diags diag.Diagnostics
-	userGroups, err := client.GetUserGroupsContext(ctx, slack.GetUserGroupsOptionIncludeUsers(true))
+	userGroups, err := client.GetUserGroupsContext(ctx, slack.GetUserGroupsOptionIncludeUsers(true), slack.GetUserGroupsOptionTeamID(team_id))
 	if err != nil {
 		return diag.FromErr(fmt.Errorf("couldn't get usergroups: %w", err))
 	}
@@ -127,9 +137,9 @@ func resourceSlackUserGroupRead(ctx context.Context, d *schema.ResourceData, m i
 	return diags
 }
 
-func findUserGroupByName(ctx context.Context, name string, includeDisabled bool, m interface{}) (slack.UserGroup, error) {
+func findUserGroupByName(ctx context.Context, name string, includeDisabled bool, team_id string, m interface{}) (slack.UserGroup, error) {
 	client := m.(*slack.Client)
-	userGroups, err := client.GetUserGroupsContext(ctx, slack.GetUserGroupsOptionIncludeDisabled(includeDisabled), slack.GetUserGroupsOptionIncludeUsers(true))
+	userGroups, err := client.GetUserGroupsContext(ctx, slack.GetUserGroupsOptionIncludeDisabled(includeDisabled), slack.GetUserGroupsOptionIncludeUsers(true), slack.GetUserGroupsOptionTeamID(team_id))
 	if err != nil {
 		return slack.UserGroup{}, err
 	}
@@ -143,9 +153,9 @@ func findUserGroupByName(ctx context.Context, name string, includeDisabled bool,
 	return slack.UserGroup{}, fmt.Errorf("could not find usergroup %s", name)
 }
 
-func findUserGroupByID(ctx context.Context, id string, includeDisabled bool, m interface{}) (slack.UserGroup, error) {
+func findUserGroupByID(ctx context.Context, id string, includeDisabled bool, team_id string, m interface{}) (slack.UserGroup, error) {
 	client := m.(*slack.Client)
-	userGroups, err := client.GetUserGroupsContext(ctx, slack.GetUserGroupsOptionIncludeDisabled(includeDisabled), slack.GetUserGroupsOptionIncludeUsers(true))
+	userGroups, err := client.GetUserGroupsContext(ctx, slack.GetUserGroupsOptionIncludeDisabled(includeDisabled), slack.GetUserGroupsOptionIncludeUsers(true), slack.GetUserGroupsOptionTeamID(team_id))
 	if err != nil {
 		return slack.UserGroup{}, err
 	}
@@ -168,12 +178,14 @@ func resourceSlackUserGroupUpdate(ctx context.Context, d *schema.ResourceData, m
 	handle := d.Get("handle").(string)
 	channels := d.Get("channels").(*schema.Set)
 	users := d.Get("users").(*schema.Set)
+	team_id := d.Get("team_id").(string)
 
 	updateUserGroupOptions := []slack.UpdateUserGroupsOption{
 		slack.UpdateUserGroupsOptionName(name),
 		slack.UpdateUserGroupsOptionChannels(schemaSetToSlice(channels)),
 		slack.UpdateUserGroupsOptionDescription(&description),
 		slack.UpdateUserGroupsOptionHandle(handle),
+		slack.UpdateUserGroupsOptionTeamID(&team_id),
 	}
 	_, err := client.UpdateUserGroupContext(ctx, id, updateUserGroupOptions...)
 	if err != nil {
@@ -181,7 +193,11 @@ func resourceSlackUserGroupUpdate(ctx context.Context, d *schema.ResourceData, m
 	}
 
 	if d.HasChanges("users") {
-		_, err := client.UpdateUserGroupMembersContext(ctx, id, strings.Join(schemaSetToSlice(users), ","))
+		UpdateUserGroupMembersOptions := []slack.UpdateUserGroupMembersOption{
+			slack.UpdateUserGroupMembersOptionTeamID(team_id),
+		}
+
+		_, err := client.UpdateUserGroupMembersContext(ctx, id, strings.Join(schemaSetToSlice(users), ","), UpdateUserGroupMembersOptions...)
 		if err != nil {
 			return diag.Errorf("could not update usergroup members %s: %s", name, err)
 		}
@@ -227,6 +243,10 @@ func updateUserGroupData(d *schema.ResourceData, userGroup slack.UserGroup) diag
 
 	if err := d.Set("users", userGroup.Users); err != nil {
 		return diag.Errorf("error setting users: %s", err)
+	}
+
+	if err := d.Set("team_id", userGroup.TeamID); err != nil {
+		return diag.Errorf("error setting team_id: %s", err)
 	}
 
 	return nil

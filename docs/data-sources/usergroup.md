@@ -39,6 +39,7 @@ The following arguments are supported:
 
 - `name` - (Optional) The name of the usergroup
 - `usergroup_id` - (Optional) The id of the usergroup
+- `team_id` - (Optional) The Slack Team ID (Slack Enterprise Grid)
 
 The data source expects exactly one of these fields, you can't set both.
 

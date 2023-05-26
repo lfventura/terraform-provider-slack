@@ -6,7 +6,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/slack-go/slack"
+	"github.com/lfventura/slack-go"
 )
 
 func dataSourceUserGroup() *schema.Resource {
@@ -48,6 +48,10 @@ func dataSourceUserGroup() *schema.Resource {
 				Set:      schema.HashString,
 				Computed: true,
 			},
+			"team_id": {
+				Type: schema.TypeString,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -55,8 +59,10 @@ func dataSourceUserGroup() *schema.Resource {
 func dataSourceUserGroupRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	var group *slack.UserGroup
 
+	team_id := d.Get("team_id");
+
 	if name, ok := d.GetOk("name"); ok {
-		u, err := findUserGroupByName(ctx, name.(string), false, m)
+		u, err := findUserGroupByName(ctx, name.(string), false, team_id.(string),m)
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -64,7 +70,7 @@ func dataSourceUserGroupRead(ctx context.Context, d *schema.ResourceData, m inte
 	}
 
 	if id, ok := d.GetOk("usergroup_id"); ok {
-		u, err := findUserGroupByID(ctx, id.(string), false, m)
+		u, err := findUserGroupByID(ctx, id.(string), false, team_id.(string), m)
 		if err != nil {
 			return diag.FromErr(err)
 		}

@@ -103,6 +103,8 @@ existing channel with the same name should be adopted by terraform and put under
 state management. If the existing channel is archived, it will be unarchived.
 (Note: for unarchiving of existing channels to work correctly, you_must_ use
 a user token, not a bot token, due to bugs in the Slack API)
+- `team_id` (Optional) indicates the Slack Team ID for which the channel should be
+created (Slack Enterprise Grid).
 
 ## Attribute Reference
 

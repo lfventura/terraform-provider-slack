@@ -69,6 +69,8 @@ The following arguments are supported:
 - `users` - (Optional) user IDs that represent the entire list of users for the
   User Group.
 - `channels` - (Optional) channel IDs for which the User Group uses as a default.
+- `team_id` - (Opional) Slack Team ID for which the User Group should be created
+(Slack Enterprise Grid).
 
 ## Attribute Reference
 

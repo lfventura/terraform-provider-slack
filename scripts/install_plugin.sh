@@ -6,28 +6,27 @@
 
 set -e
 
-oss=( linux darwin )
-archs=( amd64 386 )
+oss=( darwin )
+archs=( arm64 )
 plugins_dir="${HOME}/.terraform.d/plugins"
 
 install_plugin() {
   plugin=$1
-  version=0.0.1
+  version=1.0.0
   plugin_name=terraform-provider-$(basename "${plugin}")
-  plugin_location=$(command -v "${plugin_name}")
   echo "Installing Terraform plugin ${plugin}..."
   for os in "${oss[@]}"
   do
     for arch in "${archs[@]}"
     do
-      file="${plugin_name}_v${version}-${os}-${arch}"
-      plugin_dst="${plugins_dir}/${plugin}/${version}/${os}_${arch}/${file}"
+      file="${plugin_name}_v${version}"
+      plugin_dst="${plugins_dir}/${plugin}/terraform.local/local/${plugin_name}/${version}/${file}"
       mkdir -p "$(dirname "${plugin_dst}")"
-      echo "location: ${plugin_location}"
-      cp "${plugin_location}" "${plugin_dst}"
+      go build -ldflags="-X main.version=${version} -X main.commit=n/a"
+      mv terraform-provider-$(basename "${plugin}") ${plugin_dst}
       echo "Copied to ${plugin_dst}"
     done
   done
 }
 
-install_plugin "terraform.local.com/pablovarela/slack"
+install_plugin "terraform.local/local/slack"

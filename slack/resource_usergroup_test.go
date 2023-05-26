@@ -14,7 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	"github.com/slack-go/slack"
+	"github.com/lfventura/slack-go"
 	"github.com/stretchr/testify/require"
 )
 
@@ -171,7 +171,7 @@ func testCheckSlackUserGroupAttributes(t *testing.T, resourceName string, expect
 		}
 
 		primary := rs.Primary
-		group, err := findUserGroupByID(context.Background(), primary.ID, false, testAccProvider.Meta())
+		group, err := findUserGroupByID(context.Background(), primary.ID, false, "xxx", testAccProvider.Meta())
 		if err != nil {
 			return fmt.Errorf("couldn't get conversation info for %s: %s", primary.ID, err)
 		}

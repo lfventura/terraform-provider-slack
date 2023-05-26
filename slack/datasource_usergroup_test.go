@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	"github.com/slack-go/slack"
+	"github.com/lfventura/slack-go"
 )
 
 func TestAccSlackUserGroupDataSource_basic(t *testing.T) {
