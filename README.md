@@ -3,6 +3,8 @@
 
 ### This is a Fork!!!
 
+Feel free to use :) It is available at Terraform Registry - https://registry.terraform.io/providers/lfventura/slack/latest
+
 Some notes about this fork...
 
 - It uses a fork for slack-go library to allow create usergroups in Slack Enterprise Grid accounts. It uses a Fork based on https://github.com/slack-go/slack v0.12.2 that is available in https://github.com/lfventura/slack-go. In my repository I am just applying the PR https://github.com/slack-go/slack/pull/1179 that still open at slack-go official repository. 
