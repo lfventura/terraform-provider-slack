@@ -24,6 +24,10 @@ func dataSourceUserGroup() *schema.Resource {
 				Optional:     true,
 				ExactlyOneOf: []string{"name", "usergroup_id"},
 			},
+			"team_id": {
+				Type:	schema.TypeString,
+				Optional: true,
+			},
 			"channels": {
 				Type: schema.TypeSet,
 				Elem: &schema.Schema{
@@ -48,10 +52,10 @@ func dataSourceUserGroup() *schema.Resource {
 				Set:      schema.HashString,
 				Computed: true,
 			},
-			"team_id": {
-				Type: schema.TypeString,
-				Computed: true,
-			},
+			// "team_id": {
+			// 	Type: schema.TypeString,
+			// 	Computed: true,
+			// },
 		},
 	}
 }

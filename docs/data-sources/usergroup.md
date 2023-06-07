@@ -50,8 +50,11 @@ The data source expects exactly one of these fields, you can't set both.
 In addition to all arguments above, the following attributes are exported:
 
 - `id` - The ID of the usergroup
+- `name` - The group name
 - `description` - The short description of the User Group.
 - `handle` - The mention handle.
 - `users` - The user IDs that represent the entire list of users for the
   User Group.
 - `channels` - The channel IDs for which the User Group uses as a default.
+- `team_id` - The TeamID of the user (Slack Enterprise Grid)
+- `usergroup_id` - The ID of the usergroup

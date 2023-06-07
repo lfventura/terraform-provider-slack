@@ -43,6 +43,7 @@ The following arguments are supported:
 
 - `name` - (Optional) The name of the user
 - `email` - (Optional) The email of the user
+- `team_id` - (Optional) The Slack Team ID (Slack Enterprise Grid)
 
 The data source expects exactly one of these fields, you can't set both.
 
@@ -51,3 +52,6 @@ The data source expects exactly one of these fields, you can't set both.
 In addition to all arguments above, the following attributes are exported:
 
 - `id` - The ID of the user
+- `email` - The Email of the user
+- `name` - The Name of the user
+- `team_id` - The TeamID of the user (Slack Enterprise Grid)

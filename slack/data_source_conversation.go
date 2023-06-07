@@ -26,6 +26,10 @@ func dataSourceConversation() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 			},
+			"team_id": {
+				Type:	schema.TypeString,
+				Optional: true,
+			},
 			"topic": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -60,10 +64,6 @@ func dataSourceConversation() *schema.Resource {
 			},
 			"is_general": {
 				Type:     schema.TypeBool,
-				Computed: true,
-			},
-			"team_id": {
-				Type:	schema.TypeBool,
 				Computed: true,
 			},
 		},

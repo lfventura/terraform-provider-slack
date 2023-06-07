@@ -44,6 +44,7 @@ The following arguments are supported:
 - `channel_id` - (Optional) The ID of the channel
 - `name` - (Optional) The name of the public or private channel
 - `is_private` - (Optional) The conversation is privileged between two or more members
+- `team_id` - (Optional) The Slack Team ID (Slack Enterprise Grid)
 
 Either `channel_id` or `name` must be provided. `is_private` only works in conjunction
 with `name`.
@@ -66,3 +67,6 @@ with a remote organization.
 Grid workspaces within the same organization.
 - `is_general` - will be true if this channel is the "general" channel that includes
 all regular team members.
+- `team_id` - The TeamID of the user (Slack Enterprise Grid)
+- `channel_id` - The Channel ID
+- `id`- The Channel ID
