@@ -37,12 +37,11 @@ func dataSourceAllUsersRead(ctx context.Context, d *schema.ResourceData, m inter
 	var diags diag.Diagnostics
 	client := m.(*slack.Client)
 
-	var matchingUsers []slack.User
 	var resultingList = make([]map[string]interface{}, 0)
 
-	team_id := d.Get("team_id").(string)
+	teamId := d.Get("team_id").(string)
 
-	users, err := client.GetUsersContext(ctx, slack.GetUsersOptionTeamID(team_id))
+	users, err := client.GetUsersContext(ctx, slack.GetUsersOptionTeamID(teamId))
 	if err != nil {
 		return diag.FromErr(fmt.Errorf("Error searching for all users %s", err))
 	}
