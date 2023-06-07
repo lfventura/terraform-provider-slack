@@ -24,6 +24,11 @@ func dataSourceUser() *schema.Resource {
 				Optional:     true,
 				ExactlyOneOf: []string{"name", "email"},
 			},
+			"team_id": {
+				Type:		  schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+			},
 		},
 	}
 }
@@ -34,8 +39,10 @@ func dataSourceUserRead(ctx context.Context, d *schema.ResourceData, m interface
 	client := m.(*slack.Client)
 
 	var user *slack.User
+	team_id := d.Get("team_id").(string)
+
 	if name, ok := d.GetOk("name"); ok {
-		u, err := searchByName(ctx, name.(string), client)
+		u, err := searchByName(ctx, name.(string), team_id, client)
 		if err != nil {
 			return diag.FromErr(fmt.Errorf("not found %s: %w", name.(string), err))
 		}
@@ -66,8 +73,8 @@ func dataSourceUserRead(ctx context.Context, d *schema.ResourceData, m interface
 	return diags
 }
 
-func searchByName(ctx context.Context, name string, client *slack.Client) (*slack.User, error) {
-	users, err := client.GetUsersContext(ctx)
+func searchByName(ctx context.Context, name string, team_id string, client *slack.Client) (*slack.User, error) {
+	users, err := client.GetUsersContext(ctx, slack.GetUsersOptionTeamID(team_id))
 	if err != nil {
 		return nil, fmt.Errorf("couldn't get workspace users: %s", err)
 	}
