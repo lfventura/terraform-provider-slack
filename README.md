@@ -10,7 +10,7 @@ Some notes about this fork...
 - When slack-go applies the indicated PR, the code that is over here will be proposed as a PR to the original pablovarela repository
 
 
-Some notes for reference...
+### Some notes for reference...
 
 If you want to locally prove the provider without running any scripts...
 
@@ -29,12 +29,18 @@ and in your providers.tf
 ```
 
 
-How to release
+### How to release
 
 1. create a new tag in github
 2. /opt/homebrew/Cellar/goreleaser/1.18.2/bin/goreleaser release --clean
 
+
+### ToDo
+Update Tests - PRs are welcome :D
+
 ---
+
+### Original repo README
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/pablovarela/terraform-provider-slack)](https://goreportcard.com/report/github.com/pablovarela/terraform-provider-slack) <a href="https://github.com/pablovarela/terraform-provider-slack/actions?query=workflow%3ABuild">![build](https://github.com/pablovarela/terraform-provider-slack/workflows/Build/badge.svg)</a> <a href="https://github.com/pablovarela/terraform-provider-slack/actions?query=workflow%3Arelease">![release](https://github.com/pablovarela/terraform-provider-slack/workflows/release/badge.svg)</a>
 
