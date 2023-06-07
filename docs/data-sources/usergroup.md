@@ -21,6 +21,8 @@ The Slack API methods used by the resource are:
 If you get `missing_scope` errors while using this resource check the scopes against
 the documentation for the methods above.
 
+If you get `missing_argument` errors while using this resource you need to pass your team_id for your Slack API to work properly
+
 ## Example Usage
 
 ```hcl
