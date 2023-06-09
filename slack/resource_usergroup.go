@@ -211,7 +211,9 @@ func resourceSlackUserGroupDelete(ctx context.Context, d *schema.ResourceData, m
 	client := m.(*slack.Client)
 
 	id := d.Id()
-	_, err := client.DisableUserGroupContext(ctx, id)
+	team_id := d.Get("team_id").(string)
+
+	_, err := client.DisableUserGroupContext(ctx, id, slack.DisableUserGroupOptionTeamID(team_id))
 	if err != nil {
 		return diag.FromErr(err)
 	}
