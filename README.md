@@ -9,6 +9,7 @@ Some notes about this fork...
 
 - It uses a fork for slack-go library to allow create usergroups in Slack Enterprise Grid accounts. It uses a Fork based on https://github.com/slack-go/slack v0.12.2 that is available in https://github.com/lfventura/slack-go. In my repository I am just applying the PR https://github.com/slack-go/slack/pull/1179 that still open at slack-go official repository. 
 - This provider as been created based on https://github.com/pablovarela/terraform-provider-slack v1.2.2 just adding support for Team ID to create conversations (Natively supported and can be merged to the original repository through a PR) and for usergroups (Which uses the trick described in the previous bullet, and because of that I can not open a PR for the original repository with my changes)
+- A bug fix in the data conversations where it was not finding Archieved channels, with this bug the resource conversation was unable to reactivate a channel that was deleted, now it is working :)
 - When slack-go applies the indicated PR, the code that is over here will be proposed as a PR to the original pablovarela repository
 
 
