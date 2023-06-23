@@ -145,7 +145,7 @@ func resourceSlackConversationCreate(ctx context.Context, d *schema.ResourceData
 		TeamID:      teamID,
 	})
 	if err != nil && err.Error() == "name_taken" && d.Get("adopt_existing_channel").(bool) {
-		channel, err = findExistingChannel(ctx, client, name, isPrivate, teamID, false)
+		channel, err = findExistingChannel(ctx, client, name, isPrivate, teamID, false, false)
 		if err == nil && channel.IsArchived {
 			// ensure unarchived first if adopting existing channel, else other calls below will fail
 			if err := client.UnArchiveConversationContext(ctx, channel.ID); err != nil {
@@ -189,15 +189,19 @@ func resourceSlackConversationCreate(ctx context.Context, d *schema.ResourceData
 	return resourceSlackConversationRead(ctx, d, m)
 }
 
-func findExistingChannel(ctx context.Context, client *slack.Client, name string, isPrivate bool, teamID string, excludeArchived bool) (*slack.Channel, error) {
+func findExistingChannel(ctx context.Context, client *slack.Client, name string, isPrivate bool, teamID string, excludeArchived bool, isDataCall bool) (*slack.Channel, error) {
 	// find the existing channel. Sadly, there is no non-admin API to search by name,
 	// so we must search through ALL the channels
 	tflog.Info(ctx, "Looking for channel %s", map[string]interface{}{"channel": name})
 	paginationComplete := false
 	cursor := ""       // initial empty cursor to begin at start of list
-	var types []string // default value with empty list is "public_channel"
-	if isPrivate {
-		types = append(types, "private_channel")
+	var types []string
+	if isDataCall {
+		types = append(types, "public_channel", "private_channel")
+	} else {
+		if isPrivate {
+			types = append(types, "private_channel")
+		}
 	}
 	for !paginationComplete {
 		channels, nextCursor, err := client.GetConversationsContext(ctx, &slack.GetConversationsParameters{

@@ -87,7 +87,7 @@ func dataSourceSlackConversationRead(ctx context.Context, d *schema.ResourceData
 			return diag.FromErr(fmt.Errorf("couldn't get conversation info for %s: %w", channelID, err))
 		}
 	} else if channelName != "" {
-		channel, err = findExistingChannel(ctx, client, channelName, isPrivate, teamID, true)
+		channel, err = findExistingChannel(ctx, client, channelName, isPrivate, teamID, true, true)
 		if err != nil {
 			return diag.FromErr(fmt.Errorf("couldn't get conversation info for %s: %w", channelName, err))
 		}
