@@ -302,22 +302,38 @@ func updateChannelMembers(ctx context.Context, d *schema.ResourceData, client *s
 func resourceSlackConversationRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*slack.Client)
 	id := d.Id()
+	
+	attempt := 0
+	var channel *slack.Channel
+	var err error 
 	var diags diag.Diagnostics
-	channel, err := client.GetConversationInfoContext(ctx, &slack.GetConversationInfoInput{
-		ChannelID: id,
-	})
-	if err != nil {
-		if err.Error() == "channel_not_found" {
-			diags = append(diags, diag.Diagnostic{
-				Severity: diag.Warning,
-				Summary:  fmt.Sprintf("channel with ID %s not found, removing from state", id),
-			})
-			d.SetId("")
-			return diags
-		}
-		return diag.FromErr(fmt.Errorf("couldn't get conversation info for %s: %w", id, err))
-	}
 
+	for {
+		attempt++
+		channel, err = client.GetConversationInfoContext(ctx, &slack.GetConversationInfoInput{
+			ChannelID: id,
+		})
+
+		if err != nil {
+			if err.Error() == "channel_not_found" {
+				diags = append(diags, diag.Diagnostic{
+					Severity: diag.Warning,
+					Summary:  fmt.Sprintf("channel with ID %s not found, removing from state", id),
+				})
+				d.SetId("")
+				return diags
+			}
+			if rateLimitedError, ok := err.(*slack.RateLimitedError); ok {
+				time.Sleep(rateLimitedError.RetryAfter)
+			} else {
+				return diag.FromErr(fmt.Errorf("couldn't get conversation info for %s: %w", id, err))
+			}
+			if attempt > 2 {
+				return diag.FromErr(fmt.Errorf("couldn't get conversation info after waiting for rate limit: %s: %w", id, err))
+			}
+		} else { break }
+	}
+		
 	users, _, err := client.GetUsersInConversationContext(ctx, &slack.GetUsersInConversationParameters{
 		ChannelID: channel.ID,
 	})

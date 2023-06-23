@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -118,10 +119,23 @@ func resourceSlackUserGroupRead(ctx context.Context, d *schema.ResourceData, m i
 	client := m.(*slack.Client)
 	id := d.Id()
 	team_id := d.Get("team_id").(string)
+	attempt := 0
+	var userGroups []slack.UserGroup
+	var err error
 	var diags diag.Diagnostics
-	userGroups, err := client.GetUserGroupsContext(ctx, slack.GetUserGroupsOptionIncludeUsers(true), slack.GetUserGroupsOptionTeamID(team_id))
-	if err != nil {
-		return diag.FromErr(fmt.Errorf("couldn't get usergroups: %w", err))
+	for {
+		attempt++
+		userGroups, err = client.GetUserGroupsContext(ctx, slack.GetUserGroupsOptionIncludeUsers(true), slack.GetUserGroupsOptionTeamID(team_id))
+		if err != nil {
+			if rateLimitedError, ok := err.(*slack.RateLimitedError); ok {
+				time.Sleep(rateLimitedError.RetryAfter)
+			} else {
+				return diag.FromErr(fmt.Errorf("couldn't get usergroups: %w", err))
+			}
+		} else { break }
+		if attempt > 2 {
+			return diag.FromErr(fmt.Errorf("couldn't get usergroups after waiting for rate limit: %w", attempt))
+		}
 	}
 
 	for _, userGroup := range userGroups {
