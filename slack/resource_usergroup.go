@@ -134,7 +134,7 @@ func resourceSlackUserGroupRead(ctx context.Context, d *schema.ResourceData, m i
 			}
 		} else { break }
 		if attempt > 2 {
-			return diag.FromErr(fmt.Errorf("couldn't get usergroups after waiting for rate limit: %w", attempt))
+			return diag.FromErr(fmt.Errorf("couldn't get usergroups after waiting for rate limit: %w", err))
 		}
 	}
 
