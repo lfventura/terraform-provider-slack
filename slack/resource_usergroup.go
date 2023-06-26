@@ -108,7 +108,7 @@ func resourceSlackUserGroupCreate(ctx context.Context, d *schema.ResourceData, m
 	if users.Len() > 0 {
 		_, err := client.UpdateUserGroupMembersContext(ctx, d.Id(), strings.Join(schemaSetToSlice(users), ","), slack.UpdateUserGroupMembersOptionTeamID(team_id))
 		if err != nil {
-			return diag.Errorf("could not update usergroup members(a) %s: %v", name, err)
+			return diag.Errorf("could not update usergroup members(b) %s: %v, ids %s\n", name, err, strings.Join(schemaSetToSlice(users), ","))
 		}
 		schemaSetToSlice(users)
 	}
@@ -213,7 +213,7 @@ func resourceSlackUserGroupUpdate(ctx context.Context, d *schema.ResourceData, m
 
 		_, err := client.UpdateUserGroupMembersContext(ctx, id, strings.Join(schemaSetToSlice(users), ","), UpdateUserGroupMembersOptions...)
 		if err != nil {
-			return diag.Errorf("could not update usergroup members (b) %s: %v", name, err)
+			return diag.Errorf("could not update usergroup members(b) %s: %v, ids %s\n", name, err, strings.Join(schemaSetToSlice(users), ","))
 		}
 		schemaSetToSlice(users)
 	}
