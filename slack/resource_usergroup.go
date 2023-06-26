@@ -84,21 +84,21 @@ func resourceSlackUserGroupCreate(ctx context.Context, d *schema.ResourceData, m
 	createdUserGroup, err := client.CreateUserGroupContext(ctx, userGroup)
 	if err != nil {
 		if err.Error() != "name_already_exists" && err.Error() != "handle_already_exists" {
-			return diag.Errorf("could not create usergroup %s: %s", name, err)
+			return diag.Errorf("could not create usergroup %s: %v", name, err)
 		}
 		group, err := findUserGroupByName(ctx, name, true, team_id, m)
 		if err != nil {
-			return diag.Errorf("could not find usergroup %s: %s", name, err)
+			return diag.Errorf("could not find usergroup %s: %v", name, err)
 		}
 		_, err = client.EnableUserGroupContext(ctx, group.ID, slack.DisableUserGroupOptionTeamID(team_id))
 		if err != nil {
 			if err.Error() != "already_enabled" {
-				return diag.Errorf("could not enable usergroup %s (%s): %s", name, group.ID, err)
+				return diag.Errorf("could not enable usergroup %s (%s): %v", name, group.ID, err)
 			}
 		}
 		_, err = client.UpdateUserGroupContext(ctx, group.ID, slack.UpdateUserGroupsOptionTeamID(&team_id))
 		if err != nil {
-			return diag.Errorf("could not update usergroup %s (%s): %s", name, group.ID, err)
+			return diag.Errorf("could not update usergroup %s (%s): %v", name, group.ID, err)
 		}
 		d.SetId(group.ID)
 	} else {
@@ -108,7 +108,7 @@ func resourceSlackUserGroupCreate(ctx context.Context, d *schema.ResourceData, m
 	if users.Len() > 0 {
 		_, err := client.UpdateUserGroupMembersContext(ctx, d.Id(), strings.Join(schemaSetToSlice(users), ","), slack.UpdateUserGroupMembersOptionTeamID(team_id))
 		if err != nil {
-			return diag.Errorf("could not update usergroup members %s: %s", name, err)
+			return diag.Errorf("could not update usergroup members(a) %s: %v", name, err)
 		}
 		schemaSetToSlice(users)
 	}
@@ -213,7 +213,7 @@ func resourceSlackUserGroupUpdate(ctx context.Context, d *schema.ResourceData, m
 
 		_, err := client.UpdateUserGroupMembersContext(ctx, id, strings.Join(schemaSetToSlice(users), ","), UpdateUserGroupMembersOptions...)
 		if err != nil {
-			return diag.Errorf("could not update usergroup members %s: %s", name, err)
+			return diag.Errorf("could not update usergroup members (b) %s: %v", name, err)
 		}
 		schemaSetToSlice(users)
 	}
