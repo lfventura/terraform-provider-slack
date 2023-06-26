@@ -285,8 +285,19 @@ func updateChannelMembers(ctx context.Context, d *schema.ResourceData, client *s
 	if action == conversationActionOnUpdatePermanentMembersKick {
 		for _, currentMember := range channelUsers {
 			if currentMember != channel.Creator && currentMember != apiUserInfo.UserID && !contains(userIds, currentMember) {
-				if err := client.KickUserFromConversationContext(ctx, channelID, currentMember); err != nil {
-					return fmt.Errorf("couldn't kick user from conversation: %w", err)
+				attempt := 0
+				for {
+					attempt++
+					if err := client.KickUserFromConversationContext(ctx, channelID, currentMember); err != nil {
+						if rateLimitedError, ok := err.(*slack.RateLimitedError); ok {
+							time.Sleep(rateLimitedError.RetryAfter)
+						} else {
+							return fmt.Errorf("couldn't kick user from conversation: %w", err)
+						}
+						if attempt > 2 {
+							return fmt.Errorf("couldn't kick user from conversation after wating for rate limit sleep: %w", err)
+						}
+					} else { break }
 				}
 			}
 		}
