@@ -88,6 +88,11 @@ The following arguments are supported:
 - `purpose` - (Optional) purpose of the channel.
 - `permanent_members` - (Optional) user IDs to add to the channel.
 - `is_private` - (Optional) create a private channel instead of a public one.
+Changing this on an existing channel converts it between public and private
+using the [Slack Admin API](https://api.slack.com/methods/admin.conversations.convertToPrivate),
+which is only available on Enterprise Grid organizations and requires a user
+token (`xoxp`) with the `admin.conversations:write` scope. Outside Enterprise
+Grid, recreate the channel instead (e.g. `terraform apply -replace`).
 - `is_archived` - (Optional) indicates a conversation is archived. Frozen in time.
 - `action_on_destroy` - (Optional, Default `archive`) indicates whether the
 conversation should be archived or left behind on destroy. Valid values are
