@@ -44,7 +44,7 @@ func TestResourceSlackUserGroupCreate_NameConflictNotFound(t *testing.T) {
 	})
 
 	d := schema.TestResourceDataRaw(t, resourceSlackUserGroup().Schema, map[string]interface{}{
-		"name": "Lending Bolivia",
+		"name": "Example Group",
 	})
 
 	diags := resourceSlackUserGroupCreate(context.Background(), d, client)
@@ -55,7 +55,7 @@ func TestResourceSlackUserGroupCreate_NameConflictNotFound(t *testing.T) {
 
 	summary := diags[0].Summary
 	for _, want := range []string{
-		`usergroup "Lending Bolivia" already exists in the Slack workspace`,
+		`usergroup "Example Group" already exists in the Slack workspace`,
 		"name_already_exists",
 		"terraform import",
 	} {
@@ -79,8 +79,8 @@ func TestResourceSlackUserGroupCreate_HandleConflictNotFound(t *testing.T) {
 	})
 
 	d := schema.TestResourceDataRaw(t, resourceSlackUserGroup().Schema, map[string]interface{}{
-		"name":   "Lending Bolivia",
-		"handle": "lending-bolivia",
+		"name":   "Example Group",
+		"handle": "example-group",
 	})
 
 	diags := resourceSlackUserGroupCreate(context.Background(), d, client)
@@ -107,7 +107,7 @@ func TestResourceSlackUserGroupCreate_OtherErrorKeepsGenericMessage(t *testing.T
 	})
 
 	d := schema.TestResourceDataRaw(t, resourceSlackUserGroup().Schema, map[string]interface{}{
-		"name": "Lending Bolivia",
+		"name": "Example Group",
 	})
 
 	diags := resourceSlackUserGroupCreate(context.Background(), d, client)
@@ -117,7 +117,7 @@ func TestResourceSlackUserGroupCreate_OtherErrorKeepsGenericMessage(t *testing.T
 	}
 
 	summary := diags[0].Summary
-	if !strings.Contains(summary, "could not create usergroup Lending Bolivia") {
+	if !strings.Contains(summary, "could not create usergroup Example Group") {
 		t.Errorf("expected the generic create error, got: %s", summary)
 	}
 	if strings.Contains(summary, "already exists in the Slack workspace") {
@@ -129,7 +129,7 @@ func TestResourceSlackUserGroupCreate_OtherErrorKeepsGenericMessage(t *testing.T
 // happy recovery path: when the name already exists and the provider can locate
 // the existing usergroup, it adopts it into state without error.
 func TestResourceSlackUserGroupCreate_NameConflictAdoptsExisting(t *testing.T) {
-	group := `{"id":"S123","team_id":"","name":"Lending Bolivia","handle":"lending-bolivia","description":"desc","prefs":{"channels":[],"groups":[]},"users":[]}`
+	group := `{"id":"S123","team_id":"","name":"Example Group","handle":"example-group","description":"desc","prefs":{"channels":[],"groups":[]},"users":[]}`
 	client := newMockSlackAPIServer(t, map[string]string{
 		"usergroups.create": `{"ok":false,"error":"name_already_exists"}`,
 		"usergroups.list":   `{"ok":true,"usergroups":[` + group + `]}`,
@@ -138,7 +138,7 @@ func TestResourceSlackUserGroupCreate_NameConflictAdoptsExisting(t *testing.T) {
 	})
 
 	d := schema.TestResourceDataRaw(t, resourceSlackUserGroup().Schema, map[string]interface{}{
-		"name": "Lending Bolivia",
+		"name": "Example Group",
 	})
 
 	diags := resourceSlackUserGroupCreate(context.Background(), d, client)
