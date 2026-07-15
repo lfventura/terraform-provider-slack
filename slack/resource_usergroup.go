@@ -86,9 +86,10 @@ func resourceSlackUserGroupCreate(ctx context.Context, d *schema.ResourceData, m
 		if err.Error() != "name_already_exists" && err.Error() != "handle_already_exists" {
 			return diag.Errorf("could not create usergroup %s: %v", name, err)
 		}
+		conflict := err.Error()
 		group, err := findUserGroupByName(ctx, name, true, team_id, m)
 		if err != nil {
-			return diag.Errorf("could not find usergroup %s: %v", name, err)
+			return diag.Errorf("usergroup %q already exists in the Slack workspace (Slack API returned %q), but the provider could not find the existing usergroup to import it into the Terraform state: %v. This usually happens when the existing usergroup belongs to a different team_id than the one configured (team_id=%q) or its name/handle does not match exactly. Set the correct team_id, or import the existing usergroup with 'terraform import'.", name, conflict, err, team_id)
 		}
 		_, err = client.EnableUserGroupContext(ctx, group.ID, slack.DisableUserGroupOptionTeamID(team_id))
 		if err != nil {
