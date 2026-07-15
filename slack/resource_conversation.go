@@ -407,6 +407,12 @@ func resourceSlackConversationUpdate(ctx context.Context, d *schema.ResourceData
 		}
 	}
 
+	if d.HasChange("is_private") {
+		if err := convertConversationPrivacy(ctx, client, id, d.Get("is_private").(bool)); err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
 	if d.HasChange("permanent_members") {
 		err := updateChannelMembers(ctx, d, client, id)
 		if err != nil {
@@ -415,6 +421,38 @@ func resourceSlackConversationUpdate(ctx context.Context, d *schema.ResourceData
 	}
 
 	return resourceSlackConversationRead(ctx, d, m)
+}
+
+// convertConversationPrivacy converts a channel between public and private
+// using the Slack Admin API (admin.conversations.convertToPrivate/Public).
+// These methods are only available on Enterprise Grid organizations and
+// require a user token (xoxp) with the admin.conversations:write scope.
+func convertConversationPrivacy(ctx context.Context, client *slack.Client, id string, isPrivate bool) error {
+	var direction string
+	var err error
+	if isPrivate {
+		direction = "public to private"
+		err = client.AdminConversationsConvertToPrivate(ctx, id)
+	} else {
+		direction = "private to public"
+		err = client.AdminConversationsConvertToPublic(ctx, id)
+	}
+	if err != nil {
+		switch err.Error() {
+		case "not_an_admin", "not_allowed_token_type", "missing_scope", "feature_not_enabled", "not_an_enterprise":
+			return fmt.Errorf("couldn't convert conversation %s from %s: %s. "+
+				"Converting a channel requires the Slack Admin API, which is only available on Enterprise Grid "+
+				"organizations using a user token (xoxp) with the admin.conversations:write scope. "+
+				"If you cannot use the Admin API, recreate the channel instead (e.g. 'terraform taint' / '-replace')", id, direction, err)
+		case "restricted_action", "could_not_convert_channel", "external_channel_error":
+			return fmt.Errorf("couldn't convert conversation %s from %s: %s. "+
+				"Check the Slack admin settings and the channel type restrictions "+
+				"(see https://api.slack.com/methods/admin.conversations.convertToPrivate)", id, direction, err)
+		default:
+			return fmt.Errorf("couldn't convert conversation %s from %s: %s", id, direction, err)
+		}
+	}
+	return nil
 }
 
 func resourceSlackConversationDelete(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
