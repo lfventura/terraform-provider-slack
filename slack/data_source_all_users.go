@@ -3,8 +3,9 @@ package slack
 import (
 	"context"
 	"fmt"
-	"github.com/lfventura/slack-go"
 	"strconv"
+
+	"github.com/slack-go/slack"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -39,11 +40,11 @@ func dataSourceAllUsersRead(ctx context.Context, d *schema.ResourceData, m inter
 
 	var resultingList = make([]map[string]interface{}, 0)
 
-	teamId := d.Get("team_id").(string)
+	teamID := d.Get("team_id").(string)
 
-	users, err := client.GetUsersContext(ctx, slack.GetUsersOptionTeamID(teamId))
+	users, err := client.GetUsersContext(ctx, slack.GetUsersOptionTeamID(teamID))
 	if err != nil {
-		return diag.FromErr(fmt.Errorf("Error searching for all users %s", err))
+		return diag.FromErr(fmt.Errorf("error searching for all users %s", err))
 	}
 
 	for _, j := range users {
@@ -65,7 +66,9 @@ func dataSourceAllUsersRead(ctx context.Context, d *schema.ResourceData, m inter
 		})
 	}
 
-	d.Set("list", resultingList)
+	if err := d.Set("list", resultingList); err != nil {
+		return diag.FromErr(fmt.Errorf("error setting user list: %w", err))
+	}
 	d.SetId(strconv.Itoa(len(resultingList)))
 
 	return diags

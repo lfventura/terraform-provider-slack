@@ -6,7 +6,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/lfventura/slack-go"
+	"github.com/slack-go/slack"
 )
 
 func dataSourceUser() *schema.Resource {
@@ -25,9 +25,9 @@ func dataSourceUser() *schema.Resource {
 				ExactlyOneOf: []string{"name", "email"},
 			},
 			"team_id": {
-				Type:		  schema.TypeString,
-				Optional:     true,
-				ForceNew:     true,
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
 			},
 		},
 	}
@@ -39,10 +39,10 @@ func dataSourceUserRead(ctx context.Context, d *schema.ResourceData, m interface
 	client := m.(*slack.Client)
 
 	var user *slack.User
-	team_id := d.Get("team_id").(string)
+	teamID := d.Get("team_id").(string)
 
 	if name, ok := d.GetOk("name"); ok {
-		u, err := searchByName(ctx, name.(string), team_id, client)
+		u, err := searchByName(ctx, name.(string), teamID, client)
 		if err != nil {
 			return diag.FromErr(fmt.Errorf("not found %s: %w", name.(string), err))
 		}
@@ -73,8 +73,8 @@ func dataSourceUserRead(ctx context.Context, d *schema.ResourceData, m interface
 	return diags
 }
 
-func searchByName(ctx context.Context, name string, team_id string, client *slack.Client) (*slack.User, error) {
-	users, err := client.GetUsersContext(ctx, slack.GetUsersOptionTeamID(team_id))
+func searchByName(ctx context.Context, name string, teamID string, client *slack.Client) (*slack.User, error) {
+	users, err := client.GetUsersContext(ctx, slack.GetUsersOptionTeamID(teamID))
 	if err != nil {
 		return nil, fmt.Errorf("couldn't get workspace users: %s", err)
 	}
