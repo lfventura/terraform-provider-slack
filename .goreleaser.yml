@@ -58,4 +58,22 @@ release:
   # If you want to manually examine the release before its live, uncomment this line:
   # draft: true
 changelog:
-  disable: true
+  # Squash merges make each commit subject the merged PR title; "use: github"
+  # additionally links PR numbers and authors in the release notes.
+  use: github
+  sort: asc
+  groups:
+    - title: "Breaking changes"
+      regexp: '^[a-z]+(\(.+\))?!:'
+      order: 0
+    - title: "Features"
+      regexp: '^feat'
+      order: 1
+    - title: "Bug fixes"
+      regexp: '^fix'
+      order: 2
+    - title: "Dependencies"
+      regexp: '^(build|chore)\(deps\)|^Bump '
+      order: 3
+    - title: "Other changes"
+      order: 999
