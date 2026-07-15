@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/lfventura/slack-go"
+	"github.com/slack-go/slack"
 )
 
 // newMockSlackAPIServer spins up an httptest server that returns the provided

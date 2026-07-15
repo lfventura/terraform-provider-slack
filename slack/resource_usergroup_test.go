@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -14,7 +15,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	"github.com/lfventura/slack-go"
+	"github.com/slack-go/slack"
 	"github.com/stretchr/testify/require"
 )
 
@@ -94,6 +95,10 @@ func TestAccSlackUserGroupTest(t *testing.T) {
 }
 
 func createTestConversation(t *testing.T) *slack.Channel {
+	if os.Getenv(resource.EnvTfAcc) == "" {
+		t.Skipf("Acceptance tests skipped unless env '%s' set", resource.EnvTfAcc)
+	}
+
 	client, err := sharedSlackClient()
 	if err != nil {
 		require.NoError(t, err, "error getting client: %s", err)

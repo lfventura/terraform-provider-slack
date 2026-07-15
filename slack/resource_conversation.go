@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
-	"github.com/lfventura/slack-go"
+	"github.com/slack-go/slack"
 )
 
 const (
@@ -22,6 +22,10 @@ const (
 	// 100 is default, slack docs recommend no more than 200, but 1000 is the max.
 	// See also https://github.com/slack-go/slack/blob/master/users.go#L305
 	cursorLimit = 200
+
+	// maxRateLimitRetries is the number of extra attempts made after a
+	// rate-limited Slack API call before giving up.
+	maxRateLimitRetries = 2
 )
 
 var (
@@ -84,7 +88,7 @@ func resourceSlackConversation() *schema.Resource {
 				Optional: true,
 			},
 			"team_id": {
-				Type:	  schema.TypeString,
+				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
 			},
@@ -194,7 +198,7 @@ func findExistingChannel(ctx context.Context, client *slack.Client, name string,
 	// so we must search through ALL the channels
 	tflog.Info(ctx, "Looking for channel %s", map[string]interface{}{"channel": name})
 	paginationComplete := false
-	cursor := ""       // initial empty cursor to begin at start of list
+	cursor := "" // initial empty cursor to begin at start of list
 	var types []string
 	if isDataCall {
 		types = append(types, "public_channel", "private_channel")
@@ -250,7 +254,7 @@ func findExistingChannel(ctx context.Context, client *slack.Client, name string,
 func updateChannelMembers(ctx context.Context, d *schema.ResourceData, client *slack.Client, channelID string) error {
 	members := d.Get("permanent_members").(*schema.Set)
 
-	userIds := schemaSetToSlice(members)
+	userIDs := schemaSetToSlice(members)
 	channel, err := client.GetConversationInfoContext(ctx, &slack.GetConversationInfoInput{
 		ChannelID: channelID,
 	})
@@ -263,8 +267,8 @@ func updateChannelMembers(ctx context.Context, d *schema.ResourceData, client *s
 	if err != nil {
 		return fmt.Errorf("error authenticating with slack %w", err)
 	}
-	userIds = remove(userIds, apiUserInfo.UserID)
-	userIds = remove(userIds, channel.Creator)
+	userIDs = remove(userIDs, apiUserInfo.UserID)
+	userIDs = remove(userIDs, channel.Creator)
 
 	channelUsers, _, err := client.GetUsersInConversationContext(ctx, &slack.GetUsersInConversationParameters{
 		ChannelID: channel.ID,
@@ -284,7 +288,7 @@ func updateChannelMembers(ctx context.Context, d *schema.ResourceData, client *s
 	action := d.Get("action_on_update_permanent_members").(string)
 	if action == conversationActionOnUpdatePermanentMembersKick {
 		for _, currentMember := range channelUsers {
-			if currentMember != channel.Creator && currentMember != apiUserInfo.UserID && !contains(userIds, currentMember) {
+			if currentMember != channel.Creator && currentMember != apiUserInfo.UserID && !contains(userIDs, currentMember) {
 				attempt := 0
 				for {
 					attempt++
@@ -294,17 +298,19 @@ func updateChannelMembers(ctx context.Context, d *schema.ResourceData, client *s
 						} else {
 							return fmt.Errorf("couldn't kick user from conversation: %w", err)
 						}
-						if attempt > 2 {
+						if attempt > maxRateLimitRetries {
 							return fmt.Errorf("couldn't kick user from conversation after wating for rate limit sleep: %w", err)
 						}
-					} else { break }
+					} else {
+						break
+					}
 				}
 			}
 		}
 	}
 
-	if len(userIds) > 0 {
-		if _, err := client.InviteUsersToConversationContext(ctx, channelID, userIds...); err != nil {
+	if len(userIDs) > 0 {
+		if _, err := client.InviteUsersToConversationContext(ctx, channelID, userIDs...); err != nil {
 			if err.Error() != "already_in_channel" {
 				return fmt.Errorf("couldn't invite users to conversation: %w", err)
 			}
@@ -317,10 +323,10 @@ func updateChannelMembers(ctx context.Context, d *schema.ResourceData, client *s
 func resourceSlackConversationRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*slack.Client)
 	id := d.Id()
-	
+
 	attempt := 0
 	var channel *slack.Channel
-	var err error 
+	var err error
 	var diags diag.Diagnostics
 
 	for {
@@ -343,12 +349,14 @@ func resourceSlackConversationRead(ctx context.Context, d *schema.ResourceData, 
 			} else {
 				return diag.FromErr(fmt.Errorf("couldn't get conversation info for %s: %w", id, err))
 			}
-			if attempt > 2 {
+			if attempt > maxRateLimitRetries {
 				return diag.FromErr(fmt.Errorf("couldn't get conversation info after waiting for rate limit: %s: %w", id, err))
 			}
-		} else { break }
+		} else {
+			break
+		}
 	}
-		
+
 	users, _, err := client.GetUsersInConversationContext(ctx, &slack.GetUsersInConversationParameters{
 		ChannelID: channel.ID,
 	})
