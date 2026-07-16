@@ -86,7 +86,10 @@ The following arguments are supported:
 - `name` - (Required) name of the public or private channel.
 - `topic` - (Optional) topic for the channel.
 - `purpose` - (Optional) purpose of the channel.
-- `permanent_members` - (Optional) user IDs to add to the channel.
+- `permanent_members` - (Optional) user IDs to add to the channel. Members are
+kept in sync: if a listed user leaves or is removed from the channel, the next
+plan shows the drift and the next apply re-invites them. Users who join the
+channel on their own are not tracked and never produce a diff.
 - `is_private` - (Optional) create a private channel instead of a public one.
 Changing this on an existing channel converts it between public and private
 using the [Slack Admin API](https://api.slack.com/methods/admin.conversations.convertToPrivate),

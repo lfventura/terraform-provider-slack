@@ -251,6 +251,46 @@ func findExistingChannel(ctx context.Context, client *slack.Client, name string,
 	return nil, fmt.Errorf("could not find channel with name %s", name)
 }
 
+// getAllUsersInConversation returns every member of a channel, following
+// cursor pagination and honoring Slack rate-limit responses (a single
+// unpaginated call only returns the first page, which caused false
+// permanent_members drift on channels with more members than one page).
+func getAllUsersInConversation(ctx context.Context, client *slack.Client, channelID string) ([]string, error) {
+	var members []string
+	cursor := ""
+	for {
+		attempt := 0
+		var page []string
+		var nextCursor string
+		var err error
+		for {
+			attempt++
+			page, nextCursor, err = client.GetUsersInConversationContext(ctx, &slack.GetUsersInConversationParameters{
+				ChannelID: channelID,
+				Cursor:    cursor,
+				Limit:     cursorLimit,
+			})
+			if err != nil {
+				if rateLimitedError, ok := err.(*slack.RateLimitedError); ok {
+					time.Sleep(rateLimitedError.RetryAfter)
+				} else {
+					return nil, fmt.Errorf("could not retrieve users in conversation %s: %w", channelID, err)
+				}
+				if attempt > maxRateLimitRetries {
+					return nil, fmt.Errorf("could not retrieve users in conversation after waiting for rate limit: %s: %w", channelID, err)
+				}
+			} else {
+				break
+			}
+		}
+		members = append(members, page...)
+		if nextCursor == "" {
+			return members, nil
+		}
+		cursor = nextCursor
+	}
+}
+
 func updateChannelMembers(ctx context.Context, d *schema.ResourceData, client *slack.Client, channelID string) error {
 	members := d.Get("permanent_members").(*schema.Set)
 
@@ -270,10 +310,7 @@ func updateChannelMembers(ctx context.Context, d *schema.ResourceData, client *s
 	userIDs = remove(userIDs, apiUserInfo.UserID)
 	userIDs = remove(userIDs, channel.Creator)
 
-	channelUsers, _, err := client.GetUsersInConversationContext(ctx, &slack.GetUsersInConversationParameters{
-		ChannelID: channel.ID,
-	})
-
+	channelUsers, err := getAllUsersInConversation(ctx, client, channel.ID)
 	if err != nil {
 		return fmt.Errorf("could not retrieve conversation users for ID %s: %w", channelID, err)
 	}
@@ -357,13 +394,28 @@ func resourceSlackConversationRead(ctx context.Context, d *schema.ResourceData, 
 		}
 	}
 
-	users, _, err := client.GetUsersInConversationContext(ctx, &slack.GetUsersInConversationParameters{
-		ChannelID: channel.ID,
-	})
-	if err != nil {
-		return diag.FromErr(fmt.Errorf("couldn't get users in conversation for %s: %w", channel.ID, err))
+	// permanent_members drift detection: state receives the intersection of
+	// the configured members with the channel's actual members, so members
+	// who left or were removed show up as a diff and get re-invited, while
+	// people who joined organically never produce a false diff.
+	configured := schemaSetToSlice(d.Get("permanent_members").(*schema.Set))
+	if len(configured) > 0 {
+		channelUsers, err := getAllUsersInConversation(ctx, client, channel.ID)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+		present := make([]string, 0, len(configured))
+		for _, member := range configured {
+			if contains(channelUsers, member) {
+				present = append(present, member)
+			}
+		}
+		if err := d.Set("permanent_members", present); err != nil {
+			return diag.Errorf("error setting permanent_members: %s", err)
+		}
 	}
-	return updateChannelData(d, channel, users)
+
+	return updateChannelData(d, channel)
 }
 
 func resourceSlackConversationUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
@@ -483,7 +535,7 @@ func resourceSlackConversationDelete(ctx context.Context, d *schema.ResourceData
 	return diags
 }
 
-func updateChannelData(d *schema.ResourceData, channel *slack.Channel, _ []string) diag.Diagnostics {
+func updateChannelData(d *schema.ResourceData, channel *slack.Channel) diag.Diagnostics {
 	if channel.ID == "" {
 		return diag.Errorf("error setting id: returned channel does not have an id")
 	}
