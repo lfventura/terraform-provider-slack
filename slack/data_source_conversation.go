@@ -95,11 +95,5 @@ func dataSourceSlackConversationRead(ctx context.Context, d *schema.ResourceData
 		return diag.FromErr(fmt.Errorf("channel_id or name must be set"))
 	}
 
-	users, _, err := client.GetUsersInConversationContext(ctx, &slack.GetUsersInConversationParameters{
-		ChannelID: channel.ID,
-	})
-	if err != nil {
-		return diag.FromErr(fmt.Errorf("couldn't get users in conversation for %s: %w", channel.ID, err))
-	}
-	return updateChannelData(d, channel, users)
+	return updateChannelData(d, channel)
 }
