@@ -15,9 +15,11 @@ func TestMain(m *testing.M) {
 	resource.TestMain(m)
 }
 
+// sharedSlackClient returns the provider meta, matching what Terraform hands
+// resources at runtime, so sweepers can use the same *Meta assertion.
 func sharedSlackClient() (interface{}, error) {
 	if slackClient != nil {
-		return slackClient, nil
+		return testMeta(slackClient), nil
 	}
 
 	token, ok := os.LookupEnv("SLACK_TOKEN")
@@ -25,5 +27,5 @@ func sharedSlackClient() (interface{}, error) {
 		return nil, fmt.Errorf("could not initialize Slack client. Set environment variable SLACK_TOKEN")
 	}
 
-	return slack.New(token), nil
+	return testMeta(slack.New(token)), nil
 }

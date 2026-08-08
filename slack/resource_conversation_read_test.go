@@ -101,7 +101,7 @@ func TestConversationRead_PermanentMembersDrift(t *testing.T) {
 	})
 	d.SetId("C123")
 
-	diags := resourceSlackConversationRead(context.Background(), d, client)
+	diags := resourceSlackConversationRead(context.Background(), d, testMeta(client))
 	if diags.HasError() {
 		t.Fatalf("expected no error, got: %v", diags)
 	}
@@ -129,7 +129,7 @@ func TestConversationRead_NoPermanentMembersSkipsMembersCall(t *testing.T) {
 	})
 	d.SetId("C123")
 
-	diags := resourceSlackConversationRead(context.Background(), d, client)
+	diags := resourceSlackConversationRead(context.Background(), d, testMeta(client))
 	if diags.HasError() {
 		t.Fatalf("expected no error, got: %v", diags)
 	}

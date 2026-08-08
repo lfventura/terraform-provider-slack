@@ -140,7 +140,7 @@ func resourceSlackConversation() *schema.Resource {
 }
 
 func resourceSlackConversationCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client := m.(*slack.Client)
+	client := m.(*Meta).Client
 
 	name := d.Get("name").(string)
 	isPrivate := d.Get("is_private").(bool)
@@ -361,7 +361,7 @@ func updateChannelMembers(ctx context.Context, d *schema.ResourceData, client *s
 }
 
 func resourceSlackConversationRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client := m.(*slack.Client)
+	client := m.(*Meta).Client
 	id := d.Id()
 
 	attempt := 0
@@ -422,7 +422,7 @@ func resourceSlackConversationRead(ctx context.Context, d *schema.ResourceData, 
 }
 
 func resourceSlackConversationUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client := m.(*slack.Client)
+	client := m.(*Meta).Client
 
 	id := d.Id()
 
@@ -512,7 +512,7 @@ func convertConversationPrivacy(ctx context.Context, client *slack.Client, id st
 
 func resourceSlackConversationDelete(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
-	client := m.(*slack.Client)
+	client := m.(*Meta).Client
 
 	id := d.Id()
 	action := d.Get("action_on_destroy").(string)

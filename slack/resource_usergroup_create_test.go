@@ -47,7 +47,7 @@ func TestResourceSlackUserGroupCreate_NameConflictNotFound(t *testing.T) {
 		"name": "Example Group",
 	})
 
-	diags := resourceSlackUserGroupCreate(context.Background(), d, client)
+	diags := resourceSlackUserGroupCreate(context.Background(), d, testMeta(client))
 
 	if !diags.HasError() {
 		t.Fatalf("expected an error diagnostic, got none")
@@ -83,7 +83,7 @@ func TestResourceSlackUserGroupCreate_HandleConflictNotFound(t *testing.T) {
 		"handle": "example-group",
 	})
 
-	diags := resourceSlackUserGroupCreate(context.Background(), d, client)
+	diags := resourceSlackUserGroupCreate(context.Background(), d, testMeta(client))
 
 	if !diags.HasError() {
 		t.Fatalf("expected an error diagnostic, got none")
@@ -110,7 +110,7 @@ func TestResourceSlackUserGroupCreate_OtherErrorKeepsGenericMessage(t *testing.T
 		"name": "Example Group",
 	})
 
-	diags := resourceSlackUserGroupCreate(context.Background(), d, client)
+	diags := resourceSlackUserGroupCreate(context.Background(), d, testMeta(client))
 
 	if !diags.HasError() {
 		t.Fatalf("expected an error diagnostic, got none")
@@ -141,7 +141,7 @@ func TestResourceSlackUserGroupCreate_NameConflictAdoptsExisting(t *testing.T) {
 		"name": "Example Group",
 	})
 
-	diags := resourceSlackUserGroupCreate(context.Background(), d, client)
+	diags := resourceSlackUserGroupCreate(context.Background(), d, testMeta(client))
 
 	if diags.HasError() {
 		t.Fatalf("expected no error, got: %v", diags)

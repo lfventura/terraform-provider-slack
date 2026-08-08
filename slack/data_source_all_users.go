@@ -36,7 +36,7 @@ func dataSourceAllUsers() *schema.Resource {
 
 func dataSourceAllUsersRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
-	client := m.(*slack.Client)
+	client := m.(*Meta).Client
 
 	var resultingList = make([]map[string]interface{}, 0)
 
