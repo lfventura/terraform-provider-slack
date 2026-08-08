@@ -24,8 +24,11 @@ const (
 	cursorLimit = 200
 
 	// maxRateLimitRetries is the number of extra attempts made after a
-	// rate-limited Slack API call before giving up.
-	maxRateLimitRetries = 2
+	// rate-limited Slack API call before giving up. Slack usergroups.list and
+	// the conversation read paths are Tier-2 methods (~20 req/min), so a large
+	// configuration can exhaust the previous budget of 2 retries during a
+	// single plan. Each retry sleeps for the Retry-After the API returns.
+	maxRateLimitRetries = 8
 )
 
 var (
