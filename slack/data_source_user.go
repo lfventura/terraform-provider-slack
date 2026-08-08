@@ -36,7 +36,7 @@ func dataSourceUser() *schema.Resource {
 func dataSourceUserRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	client := m.(*slack.Client)
+	client := m.(*Meta).Client
 
 	var user *slack.User
 	teamID := d.Get("team_id").(string)

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -61,7 +60,8 @@ func resourceSlackUserGroup() *schema.Resource {
 }
 
 func resourceSlackUserGroupCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client := m.(*slack.Client)
+	meta := m.(*Meta)
+	client := meta.Client
 
 	name := d.Get("name").(string)
 	description := d.Get("description").(string)
@@ -100,6 +100,9 @@ func resourceSlackUserGroupCreate(ctx context.Context, d *schema.ResourceData, m
 		if err != nil {
 			return diag.Errorf("could not update usergroup %s (%s): %v", name, group.ID, err)
 		}
+		// The group was just enabled and updated; any cached list still shows
+		// it disabled or with stale attributes.
+		meta.invalidateUserGroups()
 		d.SetId(group.ID)
 	} else {
 		d.SetId(createdUserGroup.ID)
@@ -112,32 +115,23 @@ func resourceSlackUserGroupCreate(ctx context.Context, d *schema.ResourceData, m
 		}
 		schemaSetToSlice(users)
 	}
+
+	// The group (and possibly its membership) was just written. Drop the cache
+	// so the tail-call Read below fetches the post-write state instead of a
+	// list captured before the create.
+	meta.invalidateUserGroups()
 	return resourceSlackUserGroupRead(ctx, d, m)
 }
 
 func resourceSlackUserGroupRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client := m.(*slack.Client)
+	meta := m.(*Meta)
 	id := d.Id()
 	teamID := d.Get("team_id").(string)
-	attempt := 0
-	var userGroups []slack.UserGroup
-	var err error
 	var diags diag.Diagnostics
-	for {
-		attempt++
-		userGroups, err = client.GetUserGroupsContext(ctx, slack.GetUserGroupsOptionIncludeUsers(true), slack.GetUserGroupsOptionTeamID(teamID))
-		if err != nil {
-			if rateLimitedError, ok := err.(*slack.RateLimitedError); ok {
-				time.Sleep(rateLimitedError.RetryAfter)
-			} else {
-				return diag.FromErr(fmt.Errorf("couldn't get usergroups: %w", err))
-			}
-		} else {
-			break
-		}
-		if attempt > maxRateLimitRetries {
-			return diag.FromErr(fmt.Errorf("couldn't get usergroups after waiting for rate limit: %w", err))
-		}
+
+	userGroups, err := meta.getUserGroups(ctx, teamID, false, true)
+	if err != nil {
+		return diag.FromErr(err)
 	}
 
 	for _, userGroup := range userGroups {
@@ -154,8 +148,7 @@ func resourceSlackUserGroupRead(ctx context.Context, d *schema.ResourceData, m i
 }
 
 func findUserGroupByName(ctx context.Context, name string, includeDisabled bool, teamID string, m interface{}) (slack.UserGroup, error) {
-	client := m.(*slack.Client)
-	userGroups, err := client.GetUserGroupsContext(ctx, slack.GetUserGroupsOptionIncludeDisabled(includeDisabled), slack.GetUserGroupsOptionIncludeUsers(true), slack.GetUserGroupsOptionTeamID(teamID))
+	userGroups, err := m.(*Meta).getUserGroups(ctx, teamID, includeDisabled, true)
 	if err != nil {
 		return slack.UserGroup{}, err
 	}
@@ -170,8 +163,7 @@ func findUserGroupByName(ctx context.Context, name string, includeDisabled bool,
 }
 
 func findUserGroupByID(ctx context.Context, id string, includeDisabled bool, teamID string, m interface{}) (slack.UserGroup, error) {
-	client := m.(*slack.Client)
-	userGroups, err := client.GetUserGroupsContext(ctx, slack.GetUserGroupsOptionIncludeDisabled(includeDisabled), slack.GetUserGroupsOptionIncludeUsers(true), slack.GetUserGroupsOptionTeamID(teamID))
+	userGroups, err := m.(*Meta).getUserGroups(ctx, teamID, includeDisabled, true)
 	if err != nil {
 		return slack.UserGroup{}, err
 	}
@@ -186,7 +178,8 @@ func findUserGroupByID(ctx context.Context, id string, includeDisabled bool, tea
 }
 
 func resourceSlackUserGroupUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client := m.(*slack.Client)
+	meta := m.(*Meta)
+	client := meta.Client
 
 	id := d.Id()
 	name := d.Get("name").(string)
@@ -219,12 +212,17 @@ func resourceSlackUserGroupUpdate(ctx context.Context, d *schema.ResourceData, m
 		}
 		schemaSetToSlice(users)
 	}
+
+	// The group was just written. Drop the cache so the tail-call Read below
+	// reflects the update rather than the pre-update list.
+	meta.invalidateUserGroups()
 	return resourceSlackUserGroupRead(ctx, d, m)
 }
 
 func resourceSlackUserGroupDelete(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
-	client := m.(*slack.Client)
+	meta := m.(*Meta)
+	client := meta.Client
 
 	id := d.Id()
 	teamID := d.Get("team_id").(string)
@@ -233,6 +231,10 @@ func resourceSlackUserGroupDelete(ctx context.Context, d *schema.ResourceData, m
 	if err != nil {
 		return diag.FromErr(err)
 	}
+
+	// Delete has no tail-call Read, but a stale cache would let a later lookup
+	// in the same run resurrect the now-disabled group.
+	meta.invalidateUserGroups()
 
 	return diags
 }

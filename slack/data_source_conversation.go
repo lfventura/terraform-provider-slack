@@ -71,7 +71,7 @@ func dataSourceConversation() *schema.Resource {
 }
 
 func dataSourceSlackConversationRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client := m.(*slack.Client)
+	client := m.(*Meta).Client
 	channelID := d.Get("channel_id").(string)
 	channelName := d.Get("name").(string)
 	isPrivate := d.Get("is_private").(bool)

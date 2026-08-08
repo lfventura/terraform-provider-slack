@@ -30,7 +30,7 @@ func init() {
 			if err != nil {
 				return fmt.Errorf("error getting client: %s", err)
 			}
-			c := client.(*slack.Client)
+			c := client.(*Meta).Client
 			var cursor string
 			var sweeperErrs *multierror.Error
 			for {
@@ -203,7 +203,7 @@ func testCheckSlackChannelAttributes(t *testing.T, resourceName string, expected
 			return fmt.Errorf("not found: %s", resourceName)
 		}
 
-		c := testAccProvider.Meta().(*slack.Client)
+		c := testAccProvider.Meta().(*Meta).Client
 		primary := rs.Primary
 		channel, err := c.GetConversationInfo(&slack.GetConversationInfoInput{
 			ChannelID: primary.ID,
@@ -293,7 +293,7 @@ func testAccSlackConversationWithMembers(channelName string, members []string) s
 }
 
 func testAccCheckConversationDestroy(s *terraform.State) error {
-	c := testAccProvider.Meta().(*slack.Client)
+	c := testAccProvider.Meta().(*Meta).Client
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "slack_conversation" {
 			continue

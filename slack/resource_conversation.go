@@ -24,8 +24,11 @@ const (
 	cursorLimit = 200
 
 	// maxRateLimitRetries is the number of extra attempts made after a
-	// rate-limited Slack API call before giving up.
-	maxRateLimitRetries = 2
+	// rate-limited Slack API call before giving up. Slack usergroups.list and
+	// the conversation read paths are Tier-2 methods (~20 req/min), so a large
+	// configuration can exhaust the previous budget of 2 retries during a
+	// single plan. Each retry sleeps for the Retry-After the API returns.
+	maxRateLimitRetries = 8
 )
 
 var (
@@ -137,7 +140,7 @@ func resourceSlackConversation() *schema.Resource {
 }
 
 func resourceSlackConversationCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client := m.(*slack.Client)
+	client := m.(*Meta).Client
 
 	name := d.Get("name").(string)
 	isPrivate := d.Get("is_private").(bool)
@@ -358,7 +361,7 @@ func updateChannelMembers(ctx context.Context, d *schema.ResourceData, client *s
 }
 
 func resourceSlackConversationRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client := m.(*slack.Client)
+	client := m.(*Meta).Client
 	id := d.Id()
 
 	attempt := 0
@@ -419,7 +422,7 @@ func resourceSlackConversationRead(ctx context.Context, d *schema.ResourceData, 
 }
 
 func resourceSlackConversationUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client := m.(*slack.Client)
+	client := m.(*Meta).Client
 
 	id := d.Id()
 
@@ -509,7 +512,7 @@ func convertConversationPrivacy(ctx context.Context, client *slack.Client, id st
 
 func resourceSlackConversationDelete(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
-	client := m.(*slack.Client)
+	client := m.(*Meta).Client
 
 	id := d.Id()
 	action := d.Get("action_on_destroy").(string)

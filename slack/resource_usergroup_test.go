@@ -31,7 +31,7 @@ func init() {
 			if err != nil {
 				return fmt.Errorf("error getting client: %s", err)
 			}
-			c := client.(*slack.Client)
+			c := client.(*Meta).Client
 			groups, err := c.GetUserGroupsContext(context.Background())
 			if err != nil {
 				return fmt.Errorf("[ERROR] error getting channels: %s", err)
@@ -104,7 +104,7 @@ func createTestConversation(t *testing.T) *slack.Channel {
 		require.NoError(t, err, "error getting client: %s", err)
 	}
 
-	c := client.(*slack.Client)
+	c := client.(*Meta).Client
 	channelName := acctest.RandomWithPrefix(conversationNamePrefix)
 
 	channel, err := c.CreateConversationContext(context.Background(), slack.CreateConversationParams{
@@ -226,7 +226,7 @@ func testAccSlackUserGroupWithUsers(name string, channels, users []string) slack
 }
 
 func testAccCheckUserGroupDestroy(s *terraform.State) error {
-	c := testAccProvider.Meta().(*slack.Client)
+	c := testAccProvider.Meta().(*Meta).Client
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "slack_usergroup" {
 			continue
