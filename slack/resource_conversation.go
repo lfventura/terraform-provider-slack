@@ -515,7 +515,12 @@ func resourceSlackConversationDelete(ctx context.Context, d *schema.ResourceData
 	client := m.(*Meta).Client
 
 	id := d.Id()
-	action := d.Get("action_on_destroy").(string)
+	actionValue, exists := d.GetOkExists("action_on_destroy")
+	if !exists {
+		// Passthrough import and refresh do not populate schema defaults.
+		actionValue = resourceSlackConversation().Schema["action_on_destroy"].Default
+	}
+	action := actionValue.(string)
 	switch action {
 	case conversationActionOnDestroyNone:
 		diags = append(diags, diag.Diagnostic{
